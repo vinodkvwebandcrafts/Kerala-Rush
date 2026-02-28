@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Road Fury: Kerala Rush</title>
+  <meta name="description" content="A Road Rash inspired 3D racing game set on Kerala roads. Race, fight, and survive the chaos!" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Russo+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/index.css" />
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loader-content">
+      <h1 class="game-title">ROAD FURY</h1>
+      <h2 class="game-subtitle">Kerala Rush</h2>
+      <div class="loader-bar-container">
+        <div class="loader-bar" id="loader-bar"></div>
+      </div>
+      <p class="loader-text" id="loader-text">Loading assets...</p>
+    </div>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobby-screen" class="screen hidden">
+    <div class="lobby-header">
+      <h1 class="game-title glow">ROAD FURY</h1>
+      <h2 class="game-subtitle">Kerala Rush</h2>
+    </div>
+
+    <div class="lobby-grid">
+      <!-- Player Card -->
+      <div class="lobby-card" id="player-card">
+        <h3 class="card-title">🏍️ Rider</h3>
+        <div class="player-name-row">
+          <input type="text" id="player-name" placeholder="Enter your name..." maxlength="16" />
+        </div>
+        <div class="character-select">
+          <button class="char-btn active" data-char="male">
+            <span class="char-icon">🧑</span>
+            <span>Male</span>
+          </button>
+          <button class="char-btn" data-char="female">
+            <span class="char-icon">👩</span>
+            <span>Female</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Map Selection -->
+      <div class="lobby-card" id="map-card">
+        <h3 class="card-title">🗺️ Track</h3>
+        <div class="map-options">
+          <button class="map-btn" data-map="indus">
+            <div class="map-preview indus"></div>
+            <div class="map-info">
+              <span class="map-name">Indus Valley</span>
+              <span class="map-diff beginner">Beginner</span>
+            </div>
+          </button>
+          <button class="map-btn active" data-map="koratty">
+            <div class="map-preview koratty"></div>
+            <div class="map-info">
+              <span class="map-name">Koratty Bypass</span>
+              <span class="map-diff moderate">Moderate</span>
+            </div>
+          </button>
+          <button class="map-btn" data-map="angamaly">
+            <div class="map-preview angamaly"></div>
+            <div class="map-info">
+              <span class="map-name">Angamaly Junction</span>
+              <span class="map-diff hard">Extreme</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="lobby-card" id="difficulty-card">
+        <h3 class="card-title">⚡ Difficulty</h3>
+        <div class="diff-options">
+          <button class="diff-btn" data-diff="easy">
+            <span class="diff-icon">🟢</span> Easy
+          </button>
+          <button class="diff-btn active" data-diff="medium">
+            <span class="diff-icon">🟡</span> Medium
+          </button>
+          <button class="diff-btn" data-diff="hard">
+            <span class="diff-icon">🔴</span> Hard
+          </button>
+        </div>
+      </div>
+
+      <!-- Bike Selection -->
+      <div class="lobby-card" id="bike-card">
+        <h3 class="card-title">🏍️ Bike</h3>
+        <div class="bike-options">
+          <button class="bike-btn active" data-bike="rat">
+            <div class="bike-preview rat"></div>
+            <div class="bike-info">
+              <span class="bike-name">Rat Bike</span>
+              <span class="bike-stats">SPD ⚡⚡⚡ | CTRL ⚡⚡⚡⚡⚡</span>
+            </div>
+          </button>
+          <button class="bike-btn" data-bike="sports" id="sports-bike-btn">
+            <div class="bike-preview sports"></div>
+            <div class="bike-info">
+              <span class="bike-name">Sports Bike</span>
+              <span class="bike-stats">SPD ⚡⚡⚡⚡⚡ | CTRL ⚡⚡</span>
+            </div>
+            <div class="lock-overlay" id="sports-lock">
+              <span>🔒 Win 1st on all maps</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Start Button -->
+    <button class="start-btn" id="start-race-btn">
+      <span class="btn-text">🏁 START RACE</span>
+      <div class="btn-glow"></div>
+    </button>
+
+    <!-- Leaderboard Toggle -->
+    <button class="leaderboard-toggle" id="show-leaderboard">🏆 Leaderboard</button>
+  </div>
+
+  <!-- HUD (during race) -->
+  <div id="hud" class="screen hidden">
+    <div class="hud-top">
+      <div class="hud-position" id="hud-position">
+        <span class="pos-number">1</span><span class="pos-suffix">st</span>
+      </div>
+      <div class="hud-lap" id="hud-lap">Lap 1/1</div>
+      <div class="hud-combo" id="hud-combo" style="display:none;">
+        <span class="combo-text">COMBO</span>
+        <span class="combo-multiplier">x1</span>
+      </div>
+    </div>
+    <div class="hud-bottom">
+      <div class="speedometer" id="speedometer">
+        <svg viewBox="0 0 200 120" class="speed-gauge">
+          <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+          <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="url(#speedGrad)" stroke-width="8" stroke-linecap="round" id="speed-arc" stroke-dasharray="251" stroke-dashoffset="251"/>
+          <defs>
+            <linearGradient id="speedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00ff88"/>
+              <stop offset="50%" stop-color="#ffaa00"/>
+              <stop offset="100%" stop-color="#ff3355"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="speed-value">
+          <span id="speed-number">0</span>
+          <span class="speed-unit">km/h</span>
+        </div>
+      </div>
+      <div class="hud-score" id="hud-score">
+        <span class="score-label">SCORE</span>
+        <span class="score-value" id="score-value">0</span>
+      </div>
+    </div>
+    <div class="hud-combat">
+      <div class="combat-hint" id="combat-hint">
+        <span>J</span> Left Punch &nbsp; <span>K</span> Right Punch
+      </div>
+    </div>
+    <!-- Minimap -->
+    <canvas id="minimap" width="150" height="150"></canvas>
+  </div>
+
+  <!-- Countdown Overlay -->
+  <div id="countdown-overlay" class="screen hidden">
+    <span class="countdown-number" id="countdown-number">3</span>
+  </div>
+
+  <!-- Post-Game Screen -->
+  <div id="postgame-screen" class="screen hidden">
+    <div class="postgame-content">
+      <h1 class="postgame-title" id="postgame-title">🏆 1st Place!</h1>
+      <div class="score-breakdown" id="score-breakdown">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="achievements-list" id="achievements-list">
+        <!-- Filled dynamically -->
+      </div>
+      <button class="start-btn" id="return-lobby-btn">
+        <span class="btn-text">🔙 Return to Lobby</span>
+        <div class="btn-glow"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Leaderboard Modal -->
+  <div id="leaderboard-modal" class="screen hidden">
+    <div class="modal-overlay" id="leaderboard-close"></div>
+    <div class="modal-content">
+      <h2>🏆 Leaderboard</h2>
+      <div class="leaderboard-tabs">
+        <button class="lb-tab active" data-lbmap="all">Global</button>
+        <button class="lb-tab" data-lbmap="indus">Indus Valley</button>
+        <button class="lb-tab" data-lbmap="koratty">Koratty</button>
+        <button class="lb-tab" data-lbmap="angamaly">Angamaly</button>
+      </div>
+      <table class="leaderboard-table" id="leaderboard-table">
+        <thead>
+          <tr><th>#</th><th>Player</th><th>Score</th><th>Best Time</th><th>Wins</th></tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+      <button class="close-modal-btn" id="close-leaderboard">✕</button>
+    </div>
+  </div>
+
+  <!-- Achievement Toast -->
+  <div id="achievement-toast" class="achievement-toast hidden">
+    <span class="achievement-icon" id="ach-icon">🏆</span>
+    <span class="achievement-text" id="ach-text">Achievement Unlocked!</span>
+  </div>
+
+  <!-- Three.js Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

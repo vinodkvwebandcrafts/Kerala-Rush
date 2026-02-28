@@ -1,0 +1,18 @@
+{
+  "name": "road-fury-kerala-rush",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "three": "^0.162.0"
+  },
+  "devDependencies": {
+    "vite": "^4.5.14"
+  }
+}
