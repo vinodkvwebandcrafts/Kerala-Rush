@@ -61,45 +61,56 @@ export class BotBike {
         const group = new THREE.Group();
         const color = BOT_COLORS[index % BOT_COLORS.length];
 
-        // ── Procedural Mesh ──
-        // Body
-        const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2.0);
-        const bodyMat = new THREE.MeshLambertMaterial({ color });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.6;
-        group.add(body);
+        // Try loading GLB model first
+        let modelLoaded = false;
+        if (this.assets) {
+            const modelKey = index % 2 === 0 ? 'opponent_1' : 'opponent_2';
+            const glbModel = this.assets.getModel(modelKey);
+            if (glbModel) {
+                modelLoaded = true;
+                glbModel.scale.setScalar(2.0);
+                glbModel.rotation.y = Math.PI; // face away from camera
+                glbModel.position.y = 1.0;
+                group.add(glbModel);
+            }
+        }
 
-        // Seat
-        const seatGeo = new THREE.BoxGeometry(0.5, 0.2, 0.8);
-        const seatMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-        const seat = new THREE.Mesh(seatGeo, seatMat);
-        seat.position.set(0, 0.95, -0.2);
-        group.add(seat);
+        if (!modelLoaded) {
+            // ── Procedural Mesh Fallback ──
+            const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2.0);
+            const bodyMat = new THREE.MeshLambertMaterial({ color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            group.add(body);
 
-        // Wheels
-        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.15, 8);
-        const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-        const fw = new THREE.Mesh(wheelGeo, wheelMat);
-        fw.rotation.z = Math.PI / 2;
-        fw.position.set(0, 0.35, 0.9);
-        group.add(fw);
-        const rw = new THREE.Mesh(wheelGeo, wheelMat);
-        rw.rotation.z = Math.PI / 2;
-        rw.position.set(0, 0.35, -0.8);
-        group.add(rw);
+            const seatGeo = new THREE.BoxGeometry(0.5, 0.2, 0.8);
+            const seatMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+            const seat = new THREE.Mesh(seatGeo, seatMat);
+            seat.position.set(0, 0.95, -0.2);
+            group.add(seat);
 
-        // Rider
-        const rider = this._buildRider(color);
-        rider.position.set(0, 1.0, -0.1);
-        group.add(rider);
-        this.riderMesh = rider;
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.15, 8);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const fw = new THREE.Mesh(wheelGeo, wheelMat);
+            fw.rotation.z = Math.PI / 2;
+            fw.position.set(0, 0.35, 0.9);
+            group.add(fw);
+            const rw = new THREE.Mesh(wheelGeo, wheelMat);
+            rw.rotation.z = Math.PI / 2;
+            rw.position.set(0, 0.35, -0.8);
+            group.add(rw);
 
-        // Headlight
-        const lightGeo = new THREE.SphereGeometry(0.1, 8, 8);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-        const headlight = new THREE.Mesh(lightGeo, lightMat);
-        headlight.position.set(0, 0.7, 1.1);
-        group.add(headlight);
+            const rider = this._buildRider(color);
+            rider.position.set(0, 1.0, -0.1);
+            group.add(rider);
+            this.riderMesh = rider;
+
+            const lightGeo = new THREE.SphereGeometry(0.1, 8, 8);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+            const headlight = new THREE.Mesh(lightGeo, lightMat);
+            headlight.position.set(0, 0.7, 1.1);
+            group.add(headlight);
+        }
 
         return group;
     }
@@ -213,15 +224,17 @@ export class BotBike {
 
     applyHit(fromSide) {
         this.state = 'STUNNED';
-        this.stateTimer = GAME_CONFIG.COMBAT.STUN_DURATION;
+        this.stateTimer = 0.5; // quick recovery
         this.speed *= 0.6;
         this.lateralSpeed += fromSide === 'left' ? 3 : -3;
     }
 
     applyObstacleHit() {
-        this.speed *= GAME_CONFIG.COLLISION.OBSTACLE_SPEED_RESET;
+        // Quick stop and recover within 1 second
+        this.speed = 0;
         this.state = 'STUNNED';
-        this.stateTimer = 0.6;
+        this.stateTimer = 0.8;
+        this.lateralSpeed = (Math.random() - 0.5) * 3;
     }
 
     _updateMesh() {

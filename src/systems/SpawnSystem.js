@@ -54,7 +54,7 @@ export class SpawnSystem {
     }
 
     _spawnObstacle(z) {
-        const types = ['cow', 'cow', 'pothole', 'pothole', 'roadblock'];
+        const types = ['roadblock', 'roadblock', 'roadblock', 'roadblock', 'cow'];
         const type = types[randomInt(0, types.length - 1)];
         const roadCenter = this.track.getCenterXAtZ(z);
         const halfRoad = GAME_CONFIG.ROAD_WIDTH / 2 - 1.5;

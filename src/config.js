@@ -34,19 +34,19 @@ export const GAME_CONFIG = {
     // ── Difficulty Presets ──
     DIFFICULTY: {
         easy: {
-            botSpeedMultiplier: 0.75,
+            botSpeedMultiplier: 0.60,
             obstacleSpawnRate: 0.6,
             botAggressionMultiplier: 0.5,
             trafficDensity: 0.5,
         },
         medium: {
-            botSpeedMultiplier: 0.9,
+            botSpeedMultiplier: 0.75,
             obstacleSpawnRate: 1.0,
             botAggressionMultiplier: 1.0,
             trafficDensity: 1.0,
         },
         hard: {
-            botSpeedMultiplier: 1.05,
+            botSpeedMultiplier: 0.90,
             obstacleSpawnRate: 1.4,
             botAggressionMultiplier: 1.5,
             trafficDensity: 1.5,
@@ -56,13 +56,13 @@ export const GAME_CONFIG = {
     // ── Map Configs ──
     MAPS: {
         indus: {
-            name: 'Indus Valley',
+            name: 'Green Valley',
             curveIntensity: 0.2,
             obstacleDensity: 0.6,
             trafficDensity: 0.5,
             skyColor: 0x87ceeb,
             groundColor: 0x3a7d44,
-            roadColor: 0x444444,
+            roadColor: 0x666666,
             fogColor: 0x87ceeb,
             fogNear: 100,
             fogFar: 400,
@@ -75,7 +75,7 @@ export const GAME_CONFIG = {
             trafficDensity: 1.0,
             skyColor: 0xffa94d,
             groundColor: 0x5a4427,
-            roadColor: 0x333333,
+            roadColor: 0x666666,
             fogColor: 0xd4905c,
             fogNear: 80,
             fogFar: 350,
@@ -88,7 +88,7 @@ export const GAME_CONFIG = {
             trafficDensity: 1.5,
             skyColor: 0x331a2e,
             groundColor: 0x2a1a1a,
-            roadColor: 0x2a2a2a,
+            roadColor: 0x666666,
             fogColor: 0x1a0e1e,
             fogNear: 60,
             fogFar: 300,
@@ -122,8 +122,8 @@ export const GAME_CONFIG = {
 
     // ── Collision ──
     COLLISION: {
-        OBSTACLE_SPEED_RESET: 0.3,   // multiply speed by this on obstacle hit
-        VEHICLE_STUN_TIME: 1.5,
+        OBSTACLE_SPEED_RESET: 0.5,   // multiply speed by this on obstacle hit
+        VEHICLE_STUN_TIME: 1.0,
         SIDE_COLLISION_SHAKE: 0.4,
     },
 
@@ -132,8 +132,8 @@ export const GAME_CONFIG = {
         GRAVITY: -9.8,
         GROUND_FRICTION: 0.98,
         AIR_FRICTION: 0.995,
-        LATERAL_FRICTION: 0.92,
-        MAX_LATERAL_SPEED: 8,
+        LATERAL_FRICTION: 0.96,
+        MAX_LATERAL_SPEED: 6,
     },
 
     // ── Bots ──

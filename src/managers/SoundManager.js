@@ -2,12 +2,33 @@
    SoundManager — Audio (stub, uses Web Audio API)
    ═══════════════════════════════════════════════════ */
 
+import { Howl } from 'howler';
+
 export class SoundManager {
     constructor() {
         this.enabled = true;
         this.audioCtx = null;
         this.sounds = {};
         this.volume = 0.5;
+
+        // Custom MP3 Audio
+        this.obstacleCrashSound = new Howl({
+            src: ['/assets/sounds/chath_chath.mp3'],
+            volume: 0.8
+        });
+
+        this.botCrashSound = new Howl({
+            src: ['/assets/sounds/ntha_jomu.mp3'],
+            volume: 0.8
+        });
+
+        // Bike engine sound (looping)
+        this.engineSound = new Howl({
+            src: ['/assets/sounds/bike_sound.mp3'],
+            loop: true,
+            volume: 0.5
+        });
+        this.enginePlaying = false;
     }
 
     init() {
@@ -35,8 +56,24 @@ export class SoundManager {
     }
 
     playEngine(speed, maxSpeed) {
-        // Engine sound is too rapid for continuous synth — we'll skip continuous audio
-        // and just provide event-based sounds
+        if (!this.enabled) return;
+        if (!this.enginePlaying) {
+            this.engineSound.play();
+            this.enginePlaying = true;
+        }
+        // Adjust pitch based on speed (0.8x at idle → 1.4x at max)
+        const rate = 0.8 + (speed / maxSpeed) * 0.6;
+        this.engineSound.rate(rate);
+        // Adjust volume based on speed
+        const vol = 0.3 + (speed / maxSpeed) * 0.4;
+        this.engineSound.volume(vol);
+    }
+
+    stopEngine() {
+        if (this.enginePlaying) {
+            this.engineSound.stop();
+            this.enginePlaying = false;
+        }
     }
 
     playPunch() {
@@ -47,8 +84,17 @@ export class SoundManager {
     playCrash() {
         this._createTone(60, 0.3, 'sawtooth', 0.6);
         this._createTone(40, 0.4, 'square', 0.4);
-        // Add noise-like effect
         this._createTone(200, 0.1, 'triangle', 0.2);
+    }
+
+    playObstacleCrash() {
+        if (!this.enabled) return;
+        this.obstacleCrashSound.play();
+    }
+
+    playBotCrash() {
+        if (!this.enabled) return;
+        this.botCrashSound.play();
     }
 
     playCountdown() {

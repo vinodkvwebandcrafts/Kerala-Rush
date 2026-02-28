@@ -11,21 +11,89 @@ export class TrackGenerator {
         this.mapConfig = mapConfig;
         this.assets = assets;
         this.segments = [];
-        this.propData = []; // Store metadata for lazy rendering
-        this.activeProps = new Map(); // Store currently active meshes keyed by id
         this.trackLength = GAME_CONFIG.TRACK_LENGTH;
         this.segmentLength = GAME_CONFIG.SEGMENT_LENGTH;
         this.roadWidth = GAME_CONFIG.ROAD_WIDTH;
         this.totalSegments = Math.floor(this.trackLength / this.segmentLength);
         this.meshGroup = new THREE.Group();
+
+        // ── Cached materials (created once, shared by all props) ──
+        this.treeMat = new THREE.MeshLambertMaterial({ color: 0x2d5a27 });
+        this.trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
+        this.glbTreeModel = null; // cached GLB reference (not a clone)
+
+        // ── Prop pool ──
+        this.props = []; // { mesh, z } — all props pre-created, toggled via .visible
     }
 
     generate() {
         this._buildSegments();
         this._buildRoadMesh();
         this._buildGroundMesh();
+        this._buildStartFinishLines();
         this._buildProps();
         return this.meshGroup;
+    }
+
+    _buildStartFinishLines() {
+        const hw = this.roadWidth / 2;
+        const checkerSize = 1.0;
+        const numCheckers = Math.ceil(this.roadWidth / checkerSize);
+
+        // Helper to create a checkered line banner
+        const createCheckerLine = (z, label) => {
+            const group = new THREE.Group();
+
+            // Checkered pattern (2 rows)
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < numCheckers; col++) {
+                    const isWhite = (row + col) % 2 === 0;
+                    const geo = new THREE.PlaneGeometry(checkerSize, checkerSize);
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: isWhite ? 0xffffff : 0x111111,
+                    });
+                    const tile = new THREE.Mesh(geo, mat);
+                    tile.rotation.x = -Math.PI / 2;
+                    tile.position.set(
+                        -hw + col * checkerSize + checkerSize / 2,
+                        0.02,
+                        -z - row * checkerSize
+                    );
+                    group.add(tile);
+                }
+            }
+
+            // Vertical banner poles + banner
+            for (const side of [-1, 1]) {
+                // Pole
+                const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 5, 6);
+                const poleMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(side * (hw + 0.5), 2.5, -z);
+                group.add(pole);
+            }
+
+            // Banner across the top
+            const bannerGeo = new THREE.PlaneGeometry(this.roadWidth + 1, 1.2);
+            const bannerColor = label === 'START' ? 0x22cc44 : 0xcc2222;
+            const bannerMat = new THREE.MeshBasicMaterial({
+                color: bannerColor,
+                side: THREE.DoubleSide,
+            });
+            const banner = new THREE.Mesh(bannerGeo, bannerMat);
+            banner.position.set(0, 4.5, -z);
+            group.add(banner);
+
+            return group;
+        };
+
+        // Start line at Z = 0
+        const startLine = createCheckerLine(0, 'START');
+        this.meshGroup.add(startLine);
+
+        // Finish line at track end
+        const finishLine = createCheckerLine(this.trackLength, 'FINISH');
+        this.meshGroup.add(finishLine);
     }
 
     _buildSegments() {
@@ -60,13 +128,12 @@ export class TrackGenerator {
     _buildRoadMesh() {
         // Create a long flat plane per road segment with alternating colors
         const roadGroup = new THREE.Group();
-        const darkColor = new THREE.Color(this.mapConfig.roadColor);
-        const lightColor = new THREE.Color(this.mapConfig.roadColor).offsetHSL(0, 0, 0.05);
+        const roadColor = new THREE.Color(this.mapConfig.roadColor);
 
         for (let i = 0; i < this.segments.length - 1; i++) {
             const seg = this.segments[i];
             const nextSeg = this.segments[i + 1];
-            const color = i % 2 === 0 ? darkColor : lightColor;
+            const color = roadColor;
 
             const geometry = new THREE.BufferGeometry();
             const hw = this.roadWidth / 2;
@@ -87,10 +154,10 @@ export class TrackGenerator {
             const mesh = new THREE.Mesh(geometry, material);
             roadGroup.add(mesh);
 
-            // Lane markings (center dashed line)
-            if (i % 3 === 0) {
-                const lineGeo = new THREE.PlaneGeometry(0.15, this.segmentLength * 0.5);
-                const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.6, transparent: true });
+            // Lane markings (center dashed white line — shorter dashes)
+            if (i % 4 === 0) {
+                const lineGeo = new THREE.PlaneGeometry(0.3, this.segmentLength * 0.3);
+                const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
                 const line = new THREE.Mesh(lineGeo, lineMat);
                 line.rotation.x = -Math.PI / 2;
                 line.position.set(
@@ -101,20 +168,18 @@ export class TrackGenerator {
                 roadGroup.add(line);
             }
 
-            // Road edges (white line on both sides)
-            if (i % 2 === 0) {
-                for (const side of [-1, 1]) {
-                    const edgeGeo = new THREE.PlaneGeometry(0.12, this.segmentLength);
-                    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.3, transparent: true });
-                    const edge = new THREE.Mesh(edgeGeo, edgeMat);
-                    edge.rotation.x = -Math.PI / 2;
-                    edge.position.set(
-                        (seg.xOffset + nextSeg.xOffset) / 2 + side * hw,
-                        0.01,
-                        -(seg.z + nextSeg.z) / 2
-                    );
-                    roadGroup.add(edge);
-                }
+            // Road edges (continuous solid yellow)
+            for (const side of [-1, 1]) {
+                const edgeGeo = new THREE.PlaneGeometry(0.25, this.segmentLength);
+                const edgeMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+                const edge = new THREE.Mesh(edgeGeo, edgeMat);
+                edge.rotation.x = -Math.PI / 2;
+                edge.position.set(
+                    (seg.xOffset + nextSeg.xOffset) / 2 + side * hw,
+                    0.01,
+                    -(seg.z + nextSeg.z) / 2
+                );
+                roadGroup.add(edge);
             }
         }
 
@@ -131,80 +196,56 @@ export class TrackGenerator {
     }
 
     _buildProps() {
-        let propId = 0;
+        // Trees disabled for now per user request
+        // Cache the GLB tree model once (get the original, we'll clone from this)
+        // if (this.assets) {
+        //     const model = this.assets.getModel('tree_elm');
+        //     if (model) this.glbTreeModel = model;
+        // }
 
-        // Trees along the road
-        for (let i = 5; i < this.segments.length; i += 8) {
-            const seg = this.segments[i];
-            for (const side of [-1, 1]) {
-                const x = seg.xOffset + side * (this.roadWidth / 2 + randomRange(3, 8));
-                this.propData.push({
-                    id: propId++,
-                    type: 'tree',
-                    x: x,
-                    z: seg.z,
-                    scale: randomRange(0.8, 1.3)
-                });
-            }
-        }
+        // Pre-create ALL tree meshes (hidden). Toggling .visible is nearly free.
+        // for (let i = 5; i < this.segments.length; i += 8) {
+        //     const seg = this.segments[i];
+        //     for (const side of [-1, 1]) {
+        //         const x = seg.xOffset + side * (this.roadWidth / 2 + randomRange(3, 8));
+        //         const scale = randomRange(0.8, 1.3);
+        //         const tree = this._createTree(scale);
+        //         tree.position.set(x, 0, -seg.z);
+        //         tree.visible = false; // start hidden
+        //         this.meshGroup.add(tree);
+        //         this.props.push({ mesh: tree, z: seg.z });
+        //     }
+        // }
 
-        // Small buildings / shops along some segments
+        // Pre-create ALL buildings (hidden)
         const buildingColors = [0xd4a574, 0xc4956a, 0xb0845a, 0xe8c090];
         for (let i = 10; i < this.segments.length; i += 20) {
             const seg = this.segments[i];
             const side = Math.random() > 0.5 ? 1 : -1;
             const x = seg.xOffset + side * (this.roadWidth / 2 + randomRange(8, 14));
             const color = buildingColors[Math.floor(Math.random() * buildingColors.length)];
-            this.propData.push({
-                id: propId++,
-                type: 'building',
-                x: x,
-                z: seg.z,
-                color: color
-            });
+            const building = this._createBuilding(color);
+            building.position.set(x, 0, -seg.z);
+            building.visible = false;
+            this.meshGroup.add(building);
+            this.props.push({ mesh: building, z: seg.z });
         }
     }
 
     update(playerZ) {
-        const renderDistBehind = 150;
-        const renderDistAhead = GAME_CONFIG.RENDER_DISTANCE * GAME_CONFIG.SEGMENT_LENGTH; // e.g., 60 * 20 = 1200
+        // Use fog-matched distances — no point rendering what the fog hides
+        const renderDistBehind = 100;
+        const renderDistAhead = this.mapConfig.fogFar || 400;
 
-        for (const prop of this.propData) {
+        for (const prop of this.props) {
             const inRange = prop.z > playerZ - renderDistBehind && prop.z < playerZ + renderDistAhead;
-
-            if (inRange && !this.activeProps.has(prop.id)) {
-                // Spawn prop
-                const mesh = this._spawnProp(prop);
-                this.meshGroup.add(mesh);
-                this.activeProps.set(prop.id, mesh);
-            } else if (!inRange && this.activeProps.has(prop.id)) {
-                // Despawn prop
-                const mesh = this.activeProps.get(prop.id);
-                this.meshGroup.remove(mesh);
-                this.activeProps.delete(prop.id);
-            }
+            prop.mesh.visible = inRange;
         }
     }
 
-    _spawnProp(prop) {
-        if (prop.type === 'tree') {
-            const treeMat = new THREE.MeshLambertMaterial({ color: 0x2d5a27 });
-            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
-            const glbModel = this.assets ? this.assets.getModel('tree_elm') : null;
-
-            const tree = this._createTree(trunkMat, treeMat, glbModel, prop.scale);
-            tree.position.set(prop.x, 0, -prop.z);
-            return tree;
-        } else if (prop.type === 'building') {
-            const building = this._createBuilding(prop.color);
-            building.position.set(prop.x, 0, -prop.z);
-            return building;
-        }
-    }
-
-    _createTree(trunkMat, leafMat, glbModel, scale) {
-        if (glbModel) {
-            const clone = glbModel.clone();
+    _createTree(scale) {
+        if (this.glbTreeModel) {
+            const clone = this.glbTreeModel.clone();
             clone.scale.setScalar(scale);
             return clone;
         }
@@ -212,7 +253,7 @@ export class TrackGenerator {
         const group = new THREE.Group();
         // Trunk
         const trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 5, 6);
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        const trunk = new THREE.Mesh(trunkGeo, this.trunkMat);
         trunk.position.y = 2.5;
         group.add(trunk);
 
@@ -220,7 +261,7 @@ export class TrackGenerator {
         for (let i = 0; i < 7; i++) {
             const leafGeo = new THREE.SphereGeometry(1.2, 5, 4);
             leafGeo.scale(1, 0.3, 0.5);
-            const leaf = new THREE.Mesh(leafGeo, leafMat);
+            const leaf = new THREE.Mesh(leafGeo, this.treeMat);
             const angle = (i / 7) * Math.PI * 2;
             leaf.position.set(Math.cos(angle) * 0.8, 5 + Math.random() * 0.5, Math.sin(angle) * 0.8);
             leaf.rotation.z = Math.cos(angle) * 0.5;

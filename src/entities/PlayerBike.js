@@ -39,56 +39,64 @@ export class PlayerBike {
     _buildMesh(type) {
         const group = new THREE.Group();
 
-        // ── Procedural Mesh ──
-        // Bike body
-        const bodyColor = type === 'sports' ? 0xff3333 : 0x666666;
-        const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2.0);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.6;
-        group.add(body);
+        // Try loading GLB model first
+        let modelLoaded = false;
+        if (this.assets) {
+            const glbModel = this.assets.getModel('bike_character');
+            if (glbModel) {
+                modelLoaded = true;
+                glbModel.scale.setScalar(2.0);
+                glbModel.rotation.y = Math.PI; // face away from camera
+                glbModel.position.y = 1.0;
+                group.add(glbModel);
+            }
+        }
 
-        // Seat
-        const seatGeo = new THREE.BoxGeometry(0.5, 0.2, 0.8);
-        const seatMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-        const seat = new THREE.Mesh(seatGeo, seatMat);
-        seat.position.set(0, 0.95, -0.2);
-        group.add(seat);
+        if (!modelLoaded) {
+            // ── Procedural Mesh Fallback ──
+            const bodyColor = type === 'sports' ? 0xff3333 : 0x666666;
+            const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2.0);
+            const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            group.add(body);
 
-        // Front wheel
-        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.15, 12);
-        const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-        const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
-        frontWheel.rotation.z = Math.PI / 2;
-        frontWheel.position.set(0, 0.35, 0.9);
-        group.add(frontWheel);
+            const seatGeo = new THREE.BoxGeometry(0.5, 0.2, 0.8);
+            const seatMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+            const seat = new THREE.Mesh(seatGeo, seatMat);
+            seat.position.set(0, 0.95, -0.2);
+            group.add(seat);
 
-        // Rear wheel
-        const rearWheel = new THREE.Mesh(wheelGeo, wheelMat);
-        rearWheel.rotation.z = Math.PI / 2;
-        rearWheel.position.set(0, 0.35, -0.8);
-        group.add(rearWheel);
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.15, 12);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            frontWheel.rotation.z = Math.PI / 2;
+            frontWheel.position.set(0, 0.35, 0.9);
+            group.add(frontWheel);
 
-        // Handlebars
-        const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 6);
-        const handleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-        const handle = new THREE.Mesh(handleGeo, handleMat);
-        handle.rotation.z = Math.PI / 2;
-        handle.position.set(0, 1.0, 0.7);
-        group.add(handle);
+            const rearWheel = new THREE.Mesh(wheelGeo, wheelMat);
+            rearWheel.rotation.z = Math.PI / 2;
+            rearWheel.position.set(0, 0.35, -0.8);
+            group.add(rearWheel);
 
-        // Rider (simple shapes)
-        const riderGroup = this._buildRider();
-        riderGroup.position.set(0, 1.0, -0.1);
-        group.add(riderGroup);
-        this.riderMesh = riderGroup;
+            const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 6);
+            const handleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const handle = new THREE.Mesh(handleGeo, handleMat);
+            handle.rotation.z = Math.PI / 2;
+            handle.position.set(0, 1.0, 0.7);
+            group.add(handle);
 
-        // Headlight
-        const lightGeo = new THREE.SphereGeometry(0.1, 8, 8);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
-        const headlight = new THREE.Mesh(lightGeo, lightMat);
-        headlight.position.set(0, 0.7, 1.1);
-        group.add(headlight);
+            const riderGroup = this._buildRider();
+            riderGroup.position.set(0, 1.0, -0.1);
+            group.add(riderGroup);
+            this.riderMesh = riderGroup;
+
+            const lightGeo = new THREE.SphereGeometry(0.1, 8, 8);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+            const headlight = new THREE.Mesh(lightGeo, lightMat);
+            headlight.position.set(0, 0.7, 1.1);
+            group.add(headlight);
+        }
 
         return group;
     }
@@ -172,14 +180,18 @@ export class PlayerBike {
 
         this.speed = clamp(this.speed, 0, maxSpeed);
 
-        // ── Steering ──
+        // ── Steering (smooth, speed-dependent like a real bike) ──
         const handling = this.config.handling;
+        const speedFactor = 0.5 + 0.5 * (this.speed / maxSpeed); // steering feels heavier at speed
+        let targetLateral = this.lateralSpeed;
         if (input.left) {
-            this.lateralSpeed -= handling * dt * 60 * 0.15;
+            targetLateral -= handling * dt * 60 * 0.08 * speedFactor;
         }
         if (input.right) {
-            this.lateralSpeed += handling * dt * 60 * 0.15;
+            targetLateral += handling * dt * 60 * 0.08 * speedFactor;
         }
+        // Smooth interpolation — lower value = smoother, more gradual response
+        this.lateralSpeed = lerp(this.lateralSpeed, targetLateral, 0.15);
 
         // Lateral friction
         this.lateralSpeed *= GAME_CONFIG.PHYSICS.LATERAL_FRICTION;
@@ -211,9 +223,9 @@ export class PlayerBike {
             }
         }
 
-        // ── Lean Animation ──
-        const targetLean = -this.lateralSpeed * 0.08;
-        this.mesh.rotation.z = lerp(this.mesh.rotation.z, targetLean, 0.1);
+        // ── Lean Animation (speed-weighted, looks more natural) ──
+        const leanAmount = -this.lateralSpeed * 0.12 * speedFactor;
+        this.mesh.rotation.z = lerp(this.mesh.rotation.z, leanAmount, 0.08);
 
         this._updateMeshPosition();
     }
@@ -256,7 +268,7 @@ export class PlayerBike {
     applyObstacleHit() {
         this.speed *= GAME_CONFIG.COLLISION.OBSTACLE_SPEED_RESET;
         this.state = 'STUNNED';
-        this.stateTimer = 0.8;
+        this.stateTimer = 0.5;
         this.mesh.rotation.x = 0.1;
     }
 

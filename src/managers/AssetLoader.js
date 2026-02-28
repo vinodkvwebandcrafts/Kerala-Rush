@@ -13,6 +13,9 @@ export class AssetLoader {
     async loadAll(onProgress) {
         // Define the assets to load
         const assets = [
+            { id: 'bike_character', url: '/assets/models/bike_character.glb' },
+            { id: 'opponent_1', url: '/assets/models/opponent_1.glb' },
+            { id: 'opponent_2', url: '/assets/models/opponent_2.glb' },
             { id: 'tree_elm', url: '/assets/models/tree_elm.glb' },
             { id: 'cow', url: '/assets/models/cow.glb' }
         ];
@@ -27,7 +30,7 @@ export class AssetLoader {
                     (gltf) => {
                         const object = gltf.scene;
 
-                        // Pre-process the model (e.g., enable shadows)
+                        // Pre-process the model
                         object.traverse((child) => {
                             if (child.isMesh) {
                                 child.castShadow = true;

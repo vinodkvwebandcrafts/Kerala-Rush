@@ -9,7 +9,7 @@ export class GameStateManager {
         this.selections = {
             playerName: 'Rider_' + Math.floor(Math.random() * 9999),
             character: 'male',
-            map: 'koratty',
+            map: 'indus',
             difficulty: 'medium',
             bike: 'rat',
         };

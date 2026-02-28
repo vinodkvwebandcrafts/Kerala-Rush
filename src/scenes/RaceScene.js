@@ -49,17 +49,21 @@ export class RaceScene {
         this.scene.background = new THREE.Color(mapConfig.skyColor);
         this.scene.fog = new THREE.Fog(mapConfig.fogColor, mapConfig.fogNear, mapConfig.fogFar);
 
-        // ── Lighting ──
-        const ambient = new THREE.AmbientLight(0xffffff, mapConfig.ambientLight);
+        // ── Lighting (boosted for GLB model visibility) ──
+        const ambient = new THREE.AmbientLight(0xffffff, 1.2);
         this.scene.add(ambient);
 
-        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        const directional = new THREE.DirectionalLight(0xffffff, 1.5);
         directional.position.set(50, 100, 50);
         directional.castShadow = false;
         this.scene.add(directional);
 
-        // Warm fill light
-        const fillLight = new THREE.DirectionalLight(0xffa500, 0.3);
+        // Hemisphere light for natural sky/ground illumination
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        this.scene.add(hemiLight);
+
+        // Warm fill light from behind
+        const fillLight = new THREE.DirectionalLight(0xffa500, 0.4);
         fillLight.position.set(-30, 50, -20);
         this.scene.add(fillLight);
 
@@ -134,6 +138,7 @@ export class RaceScene {
 
         // ── Update Entities ──
         this.player.update(dt, this.input, null);
+        this.sound.playEngine(this.player.speed, GAME_CONFIG.BIKES[this.gameState.getSelection('bike')].maxSpeed);
 
         for (const bot of this.bots) {
             if (!bot.finished) {
@@ -154,7 +159,7 @@ export class RaceScene {
                 this.player.applyObstacleHit();
                 this.score.addCrash();
                 this.score.resetCleanRide();
-                this.sound.playCrash();
+                this.sound.playObstacleCrash();
                 this.screenShakeIntensity = 1.0;
                 this._flashScreen();
             }
@@ -165,7 +170,7 @@ export class RaceScene {
                 this.player.applyVehicleHit();
                 this.score.addCrash();
                 this.score.resetCleanRide();
-                this.sound.playCrash();
+                this.sound.playObstacleCrash();
                 this.screenShakeIntensity = 1.5;
                 this._flashScreen();
             }
@@ -199,7 +204,7 @@ export class RaceScene {
             onBotHitPlayer: (bot) => {
                 this.score.addHitByBot();
                 this.score.resetCleanRide();
-                this.sound.playCrash();
+                this.sound.playBotCrash();
                 this.screenShakeIntensity = 0.8;
                 this._flashScreen();
             }
@@ -249,12 +254,12 @@ export class RaceScene {
     _updateCamera(dt) {
         // Third-person chase camera
         const targetX = this.player.x;
-        const targetZ = this.player.worldZ + 8;
-        const targetY = 4;
+        const targetZ = this.player.worldZ + 4;
+        const targetY = 2.5;
 
         const lookAtX = this.player.x;
-        const lookAtZ = this.player.worldZ - 10;
-        const lookAtY = 1;
+        const lookAtZ = this.player.worldZ - 6;
+        const lookAtY = 1.5;
 
         // Smooth follow
         this.camera.position.x += (targetX - this.camera.position.x) * 0.08;
@@ -263,8 +268,9 @@ export class RaceScene {
 
         // Screen shake
         if (this.screenShakeIntensity > 0) {
-            this.camera.position.x += (Math.random() - 0.5) * this.screenShakeIntensity;
-            this.camera.position.y += (Math.random() - 0.5) * this.screenShakeIntensity * 0.5;
+            this.camera.position.x += (Math.random() - 0.5) * this.screenShakeIntensity * 1.5;
+            this.camera.position.y += (Math.random() - 0.5) * this.screenShakeIntensity * 0.8;
+            this.camera.position.z += (Math.random() - 0.5) * this.screenShakeIntensity * 0.3;
         }
 
         this.camera.lookAt(lookAtX, lookAtY, lookAtZ);
