@@ -300,6 +300,7 @@ export class RaceScene {
             const placement = this.finishOrder.indexOf('player') + 1;
             this.score.setPlacement(placement);
             this.isRunning = false;
+            this.sound.stopEngine();
 
             // Fire finished event
             this.gameState.transition('FINISHED');
@@ -311,6 +312,7 @@ export class RaceScene {
             if (this.raceTimer > 180) { // 3 minute timeout
                 this.score.setPlacement(4);
                 this.isRunning = false;
+                this.sound.stopEngine();
                 this.gameState.transition('FINISHED');
             }
         }

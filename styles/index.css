@@ -153,7 +153,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--sp-xl) var(--sp-lg);
+  padding: var(--sp-md) var(--sp-lg);
   overflow-y: auto;
   background: var(--bg-dark);
   background-image:
@@ -164,7 +164,7 @@ body {
 
 .lobby-header {
   text-align: center;
-  margin-bottom: var(--sp-xl);
+  margin-bottom: var(--sp-md);
 }
 
 .glow {
@@ -183,8 +183,8 @@ body {
 
 .lobby-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--sp-lg);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--sp-md);
   max-width: 1100px;
   width: 100%;
 }
@@ -194,7 +194,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: var(--sp-lg);
+  padding: var(--sp-md);
   backdrop-filter: blur(16px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -466,8 +466,8 @@ body {
 
 /* ── Start Button ── */
 .start-btn {
-  margin-top: var(--sp-xl);
-  padding: var(--sp-md) var(--sp-2xl);
+  margin-top: var(--sp-md);
+  padding: var(--sp-sm) var(--sp-2xl);
   background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dim));
   border: none;
   border-radius: var(--radius-full);
@@ -1063,5 +1063,39 @@ body {
 
   .countdown-number {
     font-size: 8rem;
+  }
+}
+
+/* Compact layout for laptop screens (MacBook Air etc.) */
+@media (max-height: 800px) {
+  #lobby-screen {
+    padding: var(--sp-sm) var(--sp-md);
+  }
+
+  .lobby-header {
+    margin-bottom: var(--sp-sm);
+  }
+
+  .game-title {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+  }
+
+  .lobby-grid {
+    gap: var(--sp-sm);
+  }
+
+  .lobby-card {
+    padding: var(--sp-sm);
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    margin-bottom: var(--sp-sm);
+  }
+
+  .start-btn {
+    margin-top: var(--sp-sm);
+    padding: var(--sp-xs) var(--sp-xl);
+    font-size: 1.1rem;
   }
 }
